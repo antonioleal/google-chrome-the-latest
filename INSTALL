@@ -1,0 +1,10 @@
+To install this program you need to be root and issue the following comamands.
+
+mkdir /opt/google-chrome-the-latest
+cp google-chrome-the-latest.py /opt/google-chrome-the-latest
+cp google-chrome-the-latest-cron.sh /etc/cron.hourly
+
+ thats it!
+
+Optionally you may want force the USERNAME variable at the
+google-chrome-the-latest-cron.sh file to your username.
