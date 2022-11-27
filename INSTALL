@@ -2,7 +2,9 @@ To install this program you need to be root and issue the following comamands.
 
 mkdir /opt/google-chrome-the-latest
 cp google-chrome-the-latest.py /opt/google-chrome-the-latest
+chmod +x /opt/google-chrome-the-latest/google-chrome-the-latest.py
 cp google-chrome-the-latest-cron.sh /etc/cron.hourly
+chmod +x /etc/cron.hourly/google-chrome-the-latest-cron.sh
 
  thats it!
 
