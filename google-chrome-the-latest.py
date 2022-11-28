@@ -74,28 +74,35 @@ except:
 
 # And if these versions are different upgrade...
 if current_version != latest_version:
-    dialog = tk.Tk()
-    dialog.withdraw()
-    msg = """Hey, there is a new Google Chrome release!
 
-Your version: %s
-New version : %s
+    # Download from google and confirm the release version
+    os.chdir('/tmp')
+    os.system('rm -rf %s %s' % (DOWNLOAD_FILE, TXZ_FILE))
+    os.system('/usr/bin/wget %s/%s' % (DOWNLOAD_LINK, DOWNLOAD_FILE))
+    actual_version = os.popen("rpm -q google-chrome-stable_current_x86_64.rpm | grep '^google' | awk -F - '{ print $4 }'").read()
+    INSTALL_FILE = 'google-chrome-stable-%s-x86_64-1.txz' % actual_version
+    if current_version == latest_version:
+        exit(0)
 
-Do you want to install it?""" % (current_version, latest_version)
     silent = False
     if len(sys.argv) == 2:
         if sys.argv[1].upper() == 'SILENT':
             silent = True
     if not silent:
+        # Ask permission to install
+        dialog = tk.Tk()
+        dialog.withdraw()
+        msg = """Hey, there is a new Google Chrome release!
+
+Your version: %s
+New version : %s
+
+Do you want to install it?""" % (current_version, actual_version)    
         yesno = messagebox.askyesno(title='Chrome, the latest', message=msg)
         dialog.destroy()
     else:
         yesno = True
     if yesno:
-        INSTALL_FILE = 'google-chrome-%s-x86_64-1.txz' % latest_version
-        os.chdir('/tmp')
-        os.system('rm -rf %s %s %s' % (DOWNLOAD_FILE, TXZ_FILE, INSTALL_FILE))
-        os.system('/usr/bin/wget %s/%s' % (DOWNLOAD_LINK, DOWNLOAD_FILE))
         os.system('/usr/bin/rpm2txz %s' % DOWNLOAD_FILE)
         os.system('mv %s %s' % (TXZ_FILE, INSTALL_FILE))
         os.system('/sbin/upgradepkg --install-new %s' % INSTALL_FILE)
@@ -104,4 +111,4 @@ Do you want to install it?""" % (current_version, latest_version)
         if not silent:
             dialog = tk.Tk()
             dialog.withdraw()
-            messagebox.showinfo("Done","Google Chrome is now at version %s" % latest_version)
+            messagebox.showinfo("Done","Google Chrome is now at version %s" % actual_version)
