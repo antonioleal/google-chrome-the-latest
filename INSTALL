@@ -13,7 +13,7 @@ chmod +x /etc/cron.hourly/google-chrome-the-latest-cron.sh
 Thats it!
 
 Now you can start the chrome install simply by running:
-python3 /opt/google-chrome-the-latest/google-chrome-the-latest.py
+/opt/google-chrome-the-latest/google-chrome-the-latest.py install
 
 In any event this program will notify you within on hour
 that a new Chrome is available for you to install.
