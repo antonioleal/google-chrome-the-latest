@@ -19,5 +19,5 @@ Normally it is asked if you want to install new version, but
 providing the argument "silent" will just update with no
 human intervention.
 
-The options "install" or "upgrade" allow the user to start a 
+The arguments "install" or "upgrade" allow the user to start a 
 download from Google and perforam an install or an upgrade.
