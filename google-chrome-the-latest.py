@@ -93,12 +93,12 @@ if current_version != latest_version or upgrade_install:
         if not silent:
             dialog = tk.Tk()
             dialog.withdraw()
-            msg = """Hey, there is a new Google Chrome release!
+            msg = """Hey, whatismybrowser.com reported a new Google Chrome version: %s
 
-Your version: %s
-New version : %s
+Your version   : %s
+Actual version : %s
 
-Do you want to install it?""" % (current_version, actual_version)    
+Do you want to install it?""" % (latest_version, current_version, actual_version) 
             yesno = messagebox.askyesno(title='Chrome, the latest', message=msg)
             dialog.destroy()
         else:
