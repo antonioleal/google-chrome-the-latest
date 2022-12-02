@@ -36,9 +36,10 @@ import tkinter as tk
 from tkinter import messagebox
 
 DOWNLOAD_LINK = 'https://dl.google.com/linux/direct'
-DOWNLOAD_FILE = 'google-chrome-stable_current_x86_64.rpm'
-TXZ_FILE = DOWNLOAD_FILE[:-3] + 'txz'
+RPM_FILE = 'google-chrome-stable_current_x86_64.rpm'
+TXZ_FILE = RPM_FILE[:-3] + 'txz'
 LASTRUN = '/opt/google-chrome-the-latest/lastrun'
+A_DAY_IN_SECONDS = 86400
 
 # Check if you are root
 if os.geteuid() != 0:
@@ -57,7 +58,7 @@ for a in sys.argv:
 if os.path.exists(LASTRUN) and not upgrade_install:
     ti_m = os.path.getmtime(LASTRUN)
     ti_n = time.time()
-    if (ti_n - ti_m) < 86400:
+    if (ti_n - ti_m) < A_DAY_IN_SECONDS:
         exit(0)
 os.system('touch %s' % LASTRUN)
 
@@ -87,12 +88,11 @@ except:
 if current_version != latest_version or upgrade_install:
     # Download from google and confirm the release version
     os.chdir('/tmp')
-    os.system('rm -rf %s %s' % (DOWNLOAD_FILE, TXZ_FILE))
-    os.system('/usr/bin/wget %s/%s' % (DOWNLOAD_LINK, DOWNLOAD_FILE))
+    os.system('rm -rf %s %s' % (RPM_FILE, TXZ_FILE))
+    os.system('/usr/bin/wget %s/%s' % (DOWNLOAD_LINK, RPM_FILE))
     actual_version = os.popen("rpm -q google-chrome-stable_current_x86_64.rpm | grep '^google' | awk -F - '{ print $4 }'").read().strip()
     # Proceed if a new version is actually confirmed
     if current_version != actual_version or upgrade_install:
-        INSTALL_FILE = 'google-chrome-stable-%s-x86_64-1.txz' % actual_version
         if not silent:
             dialog = tk.Tk()
             dialog.withdraw()
@@ -107,10 +107,11 @@ Do you want to install it?""" % (latest_version, current_version, actual_version
         else:
             yesno = True
         if yesno:
-            os.system('/usr/bin/rpm2txz %s' % DOWNLOAD_FILE)
+            INSTALL_FILE = 'google-chrome-stable-%s-x86_64-1.txz' % actual_version
+            os.system('/usr/bin/rpm2txz %s' % RPM_FILE)
             os.system('mv %s %s' % (TXZ_FILE, INSTALL_FILE))
             os.system('/sbin/upgradepkg --install-new %s' % INSTALL_FILE)
-            os.system('rm -rf %s %s ' % (DOWNLOAD_FILE, INSTALL_FILE))
+            os.system('rm -rf %s %s ' % (RPM_FILE, INSTALL_FILE))
 
             if not silent:
                 dialog = tk.Tk()
