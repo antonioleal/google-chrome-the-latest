@@ -62,17 +62,20 @@ if os.path.exists(LASTRUN) and not upgrade_install:
 os.system('touch %s' % LASTRUN)
 
 # Check the web for latest Chrome version.
-# We are expecting sometning like:
-# xmlstr = """
-# <tr>
-    # <td>Chrome on <strong>Linux</strong></td>
-    # <td>107.0.5304.121</td>
-    # <td>2022-11-25</td>
-# </tr>
-# """
-xmlstr=os.popen('curl -s https://www.whatismybrowser.com/guides/the-latest-version/chrome | grep -B 1 -A 3 "<td>Chrome on <strong>Linux</strong></td>"').read()
-root = ET.fromstring(xmlstr)
-latest_version = root[1].text.strip()
+try:
+    # We are expecting sometning like:
+    # xmlstr = """
+    # <tr>
+        # <td>Chrome on <strong>Linux</strong></td>
+        # <td>107.0.5304.121</td>
+        # <td>2022-11-25</td>
+    # </tr>
+    # """
+    xmlstr=os.popen('curl -s https://www.whatismybrowser.com/guides/the-latest-version/chrome | grep -B 1 -A 3 "<td>Chrome on <strong>Linux</strong></td>"').read()
+    root = ET.fromstring(xmlstr)
+    latest_version = root[1].text.strip()
+except:
+    latest_version = 'undetermined'
 
 # Check the current installed version, if there is one...
 try:
@@ -80,7 +83,7 @@ try:
 except:
     current_version = 'not found'
 
-# Do upgrade or install
+# Proceed to upgrade or install
 if current_version != latest_version or upgrade_install:
     # Download from google and confirm the release version
     os.chdir('/tmp')
