@@ -18,4 +18,4 @@ simply by running:
 
 At any time you can force a download from Google site and upgrade
 without any pop-up window with:
-/opt/google-chrome-the-latest/google-chrome-the-latest.py silent install
+/opt/google-chrome-the-latest/google-chrome-the-latest.py silent upgrade
