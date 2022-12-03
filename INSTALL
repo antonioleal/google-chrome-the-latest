@@ -17,8 +17,7 @@ cp /opt/google-chrome-the-latest/google-chrome-the-latest-cron.sh /etc/cron.hour
 
 Thats it!
 
-If you don't have yet Chrome installed you can do so by
-simply by running:
+If you don't have yet installed Chrome you can do so by simply by running:
 /opt/google-chrome-the-latest/google-chrome-the-latest.py install
 
 At any time you can force a download from Google site and upgrade
