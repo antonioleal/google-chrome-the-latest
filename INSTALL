@@ -2,16 +2,18 @@ Please make sure you have not installed Chrome by other means in
 you Slackware box. This package can install it for you and maintain
 it updated afterwards.
 
-In order to run need to install the packages Python3 and PyGtk,
-both available on Slackware.
+The Slackware package created by this script is named "google-chrome-stable".
 
-To install this program you need to be root and issue the following:
+In order to run this program you need to install the packages Python3 and PyGtk,
+both available on the stock Slackware distro.
+
+After unpacking the files to install you need to be root and issue the following commands:
 
 mkdir /opt/google-chrome-the-latest
 cp *.* /opt/google-chrome-the-latest
 chmod +x /opt/google-chrome-the-latest/google-chrome-the-latest.py
-cp google-chrome-the-latest-cron.sh /etc/cron.hourly
-chmod +x /etc/cron.hourly/google-chrome-the-latest-cron.sh
+chmod +x /opt/google-chrome-the-latest/google-chrome-the-latest-cron.sh
+cp /opt/google-chrome-the-latest/google-chrome-the-latest-cron.sh /etc/cron.hourly
 
 Thats it!
 
