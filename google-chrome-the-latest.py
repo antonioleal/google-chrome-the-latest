@@ -32,76 +32,158 @@ import os
 import time
 import sys
 import xml.etree.ElementTree as ET
-import tkinter as tk
-from tkinter import messagebox
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
 
+# Program variables
 DOWNLOAD_LINK = 'https://dl.google.com/linux/direct'
-DOWNLOAD_FILE = 'google-chrome-stable_current_x86_64.rpm'
-TXZ_FILE = DOWNLOAD_FILE[:-3] + 'txz'
-LASTRUN = '/opt/google-chrome-the-latest/lastrun'
+RPM_FILE = 'google-chrome-stable_current_x86_64.rpm'
+TXZ_FILE = RPM_FILE[:-3] + 'txz'
+APP_PATH = '/opt/google-chrome-the-latest'
+LASTRUN = APP_PATH + '/lastrun'
+A_DAY_IN_SECONDS = 86400
+MESSAGE_1 = """Hey, whatismybrowser.com reported a new Google Chrome version: %s
 
-# Check if you are root
-if os.geteuid() != 0:
-    print('You must run this script as root.')
-    exit(0)
+Your version   : %s
+Actual version : %s
 
-# Only run once a day, even though we set cron.hourly
-if os.path.exists(LASTRUN):
-    ti_m = os.path.getmtime(LASTRUN)
-    ti_n = time.time()
-    if (ti_n - ti_m) < 86400:
-        exit(0)
-os.system('touch %s' % LASTRUN)
+Do you want to install it?
+"""
+MESSAGE_2 = """Chrome is now at version %s
+Please review the installation output below:
+"""
+yesno = False
+builder = None
+
+class PermissionHandler:
+    def onDestroy(self, *args):
+        Gtk.main_quit()
+    def onButtonYesPressed(self, ButtonYes):
+        global yesno, builder
+        window = builder.get_object("permission-dialog")        
+        window.hide()
+        Gtk.main_quit()
+        yesno = True
+    def onButtonNoPressed(self, ButtonNo):
+        global yesno    
+        Gtk.main_quit()
+        yesno = False
+
+class EndHandler:
+    def onDestroy(self, *args):
+        Gtk.main_quit()
+    def onButtonOKPressed(self, ButtonOK):
+        Gtk.main_quit()
 
 # Check the web for latest Chrome version.
-# We are expecting sometning like:
-# xmlstr = """
-# <tr>
-    # <td>Chrome on <strong>Linux</strong></td>
-    # <td>107.0.5304.121</td>
-    # <td>2022-11-25</td>
-# </tr>
-# """
-xmlstr=os.popen('curl -s https://www.whatismybrowser.com/guides/the-latest-version/chrome | grep -B 1 -A 3 "<td>Chrome on <strong>Linux</strong></td>"').read()
-root = ET.fromstring(xmlstr)
-latest_version = root[1].text.strip()
-
+def get_latest_version():
+    try:
+        # We are expecting sometning like:
+        # xmlstr = """
+        # <tr>
+            # <td>Chrome on <strong>Linux</strong></td>
+            # <td>108.0.5359.94</td>
+            # <td>2022-11-25</td>
+        # </tr>
+        # """
+        xmlstr=os.popen('curl -s https://www.whatismybrowser.com/guides/the-latest-version/chrome | grep -B 1 -A 3 "<td>Chrome on <strong>Linux</strong></td>"').read()
+        root = ET.fromstring(xmlstr)
+        latest_version = root[1].text.strip()
+    except:
+        latest_version = 'undetermined'
+    return latest_version
+    
 # Check the current installed version, if there is one...
-try:
-    current_version = os.popen('google-chrome-stable --version').read().split()[2]
-except:
-    current_version = 'not found'
+def get_current_version():
+    try:
+        current_version = os.popen('google-chrome-stable --version').read().split()[2]
+    except:
+        current_version = 'not found'
+    return current_version
 
-# And if these versions are different upgrade...
-if current_version != latest_version:
-    dialog = tk.Tk()
-    dialog.withdraw()
-    msg = """Hey, there is a new Google Chrome release!
+# Download from google and confirm the release version
+def get_actual_version():
+    os.chdir(APP_PATH)
+    os.system('rm -rf %s %s' % (RPM_FILE, TXZ_FILE))
+    os.system('/usr/bin/wget %s/%s' % (DOWNLOAD_LINK, RPM_FILE))
+    return os.popen("rpm -q google-chrome-stable_current_x86_64.rpm | grep '^google' | awk -F - '{ print $4 }'").read().strip()
 
-Your version: %s
-New version : %s
+def ask_permission_to_install(latest_version, current_version, actual_version):
+    global builder
+    builder = Gtk.Builder()
+    builder.add_from_file("permission-dialog.glade")
+    builder.connect_signals(PermissionHandler())
+    window = builder.get_object("permission-dialog")
+    LabelMessage = builder.get_object("LabelMessage")
+    LabelMessage.set_text(MESSAGE_1 % (latest_version, current_version, actual_version))
+    window.show_all()
+    Gtk.main()
 
-Do you want to install it?""" % (current_version, latest_version)
+def install(actual_version):
+    INSTALL_FILE = 'google-chrome-stable-%s-x86_64-1.txz' % actual_version
+    log = os.popen('/usr/bin/rpm2txz %s' % RPM_FILE).read()
+    log += os.popen('mv %s %s' % (TXZ_FILE, INSTALL_FILE)).read()
+    log += os.popen('/sbin/upgradepkg --install-new %s' % INSTALL_FILE).read()
+    log += os.popen('rm -rf %s %s ' % (RPM_FILE, INSTALL_FILE)).read()
+    return log
+
+def end_dialog(actual_version, log):
+    global builder
+    builder = Gtk.Builder()
+    builder.add_from_file("end-dialog.glade")
+    builder.connect_signals(EndHandler())
+    window = builder.get_object("end-dialog")
+    Log = builder.get_object("Label")
+    Log.set_text(MESSAGE_2 % actual_version)
+    Log = builder.get_object("Log")
+    Log.get_buffer().set_text(log)
+    window.show_all()
+    Gtk.main()
+
+  
+def main():
+    global yesno
+    # Check if you are root
+    if os.geteuid() != 0:
+        print('You must run this script as root.')
+        exit(0)
+    
+    # Read program arguments
     silent = False
-    if len(sys.argv) == 2:
-        if sys.argv[1].upper() == 'SILENT':
-            silent = True
-    if not silent:
-        yesno = messagebox.askyesno(title='Chrome, the latest', message=msg)
-        dialog.destroy()
-    else:
-        yesno = True
-    if yesno:
-        INSTALL_FILE = 'google-chrome-%s-x86_64-1.txz' % latest_version
-        os.chdir('/tmp')
-        os.system('rm -rf %s %s %s' % (DOWNLOAD_FILE, TXZ_FILE, INSTALL_FILE))
-        os.system('/usr/bin/wget %s/%s' % (DOWNLOAD_LINK, DOWNLOAD_FILE))
-        os.system('/usr/bin/rpm2txz %s' % DOWNLOAD_FILE)
-        os.system('mv %s %s' % (TXZ_FILE, INSTALL_FILE))
-        os.system('/sbin/upgradepkg --install-new %s' % INSTALL_FILE)
-        os.system('rm -rf %s %s %s' % (DOWNLOAD_FILE, TXZ_FILE, INSTALL_FILE))
+    upgrade_install = False
+    for a in sys.argv:
+        if 'SILENT' == a.upper(): silent = True
+        if 'INSTALL' == a.upper(): upgrade_install = True
+        if 'UPGRADE' == a.upper(): upgrade_install = True
 
-        if not silent:
-            dialog = tk.Tk()
-            dialog.withdraw()
-            messagebox.showinfo("Done","Google Chrome is now at version %s" % latest_version)
+    # Exit if $DISPLAY is not set
+    if len(os.popen("echo $DISPLAY").read().strip()) == 0 and not silent:
+        print('In order to run you must have an XServer running, otherwise use the "silent" program argument.')
+        exit(0)
+
+    # Only run once a day, even though we set cron.hourly
+    if os.path.exists(LASTRUN) and not upgrade_install:
+        ti_m = os.path.getmtime(LASTRUN)
+        ti_n = time.time()
+        if (ti_n - ti_m) < A_DAY_IN_SECONDS:
+            exit(0)
+    os.system('touch %s' % LASTRUN)
+
+    latest_version = get_latest_version()
+    current_version = get_current_version()
+
+    if current_version != latest_version or upgrade_install:
+        actual_version = get_actual_version()
+        if current_version != actual_version or upgrade_install:
+            if not silent:
+                ask_permission_to_install(latest_version, current_version, actual_version)
+            else:
+                yesno = True
+            if yesno:
+                log = install(actual_version)
+                if not silent:
+                    end_dialog(actual_version, log)
+
+if __name__ == '__main__':
+    main()
