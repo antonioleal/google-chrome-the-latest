@@ -7,13 +7,10 @@ The Slackware package created by this script is named "google-chrome-stable".
 In order to run this program you need to install the packages Python3 and PyGtk,
 both available on the stock Slackware distro.
 
-After unpacking the files to install you need to be root and issue the following commands:
-
-mkdir /opt/google-chrome-the-latest
-cp *.* /opt/google-chrome-the-latest
-chmod +x /opt/google-chrome-the-latest/google-chrome-the-latest.py
-chmod +x /opt/google-chrome-the-latest/google-chrome-the-latest-cron.sh
-cp /opt/google-chrome-the-latest/google-chrome-the-latest-cron.sh /etc/cron.hourly
+To install, after unpacking the files, you need to run the provided install.sh
+as root.
+To uninstall just delete /opt/google-chrome-the-latest and remove the cron file
+/opt/google-chrome-the-latest/google-chrome-the-latest-cron.sh
 
 Thats it!
 
