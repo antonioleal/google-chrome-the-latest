@@ -14,5 +14,7 @@ cp whatismybrowser-logo.png $DEST
 cp README $DEST
 cp INSTALL $DEST
 cp LICENSE $DEST
+cp install.sh $DEST
+cp uninstall.sh $DEST
 
 cp google-chrome-the-latest-cron.sh /etc/cron.hourly
