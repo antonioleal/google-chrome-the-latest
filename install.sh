@@ -12,5 +12,7 @@ cp end-dialog.glade $DEST
 cp google-chrome-the-latest.png $DEST
 cp whatismybrowser-logo.png $DEST
 cp README $DEST
+cp INSTALL $DEST
+cp LICENSE $DEST
 
 cp google-chrome-the-latest-cron.sh /etc/cron.hourly
