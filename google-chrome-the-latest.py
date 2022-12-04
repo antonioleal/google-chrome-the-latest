@@ -105,7 +105,7 @@ def get_current_version():
 # Download from google and confirm the release version
 def get_actual_version():
     os.chdir(APP_PATH)
-    os.system('rm -rf %s %s' % (RPM_FILE, TXZ_FILE))
+    os.system('rm -rf %s' % RPM_FILE)
     os.system('/usr/bin/wget %s/%s' % (DOWNLOAD_LINK, RPM_FILE))
     return os.popen("rpm -q google-chrome-stable_current_x86_64.rpm | grep '^google' | awk -F - '{ print $4 }'").read().strip()
 
@@ -125,7 +125,8 @@ def install(actual_version):
     log = os.popen('/usr/bin/rpm2txz %s' % RPM_FILE).read()
     log += os.popen('mv %s %s' % (TXZ_FILE, INSTALL_FILE)).read()
     log += os.popen('/sbin/upgradepkg --install-new %s' % INSTALL_FILE).read()
-    log += os.popen('rm -rf %s %s ' % (RPM_FILE, INSTALL_FILE)).read()
+    log += os.popen('mv %s /tmp' % INSTALL_FILE).read()
+    log += os.popen('rm -rf %s' % RPM_FILE).read()
     log += os.popen('cp /opt/google/chrome/product_logo_256.png /usr/share/pixmaps/google-chrome.png').read()
     return log
 
