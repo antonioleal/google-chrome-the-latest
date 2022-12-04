@@ -126,6 +126,7 @@ def install(actual_version):
     log += os.popen('mv %s %s' % (TXZ_FILE, INSTALL_FILE)).read()
     log += os.popen('/sbin/upgradepkg --install-new %s' % INSTALL_FILE).read()
     log += os.popen('rm -rf %s %s ' % (RPM_FILE, INSTALL_FILE)).read()
+    log += os.popen('cp /opt/google/chrome/product_logo_256.png /usr/share/pixmaps/google-chrome.png').read()
     return log
 
 def end_dialog(actual_version, log):
