@@ -1,5 +1,5 @@
 Please make sure you have not installed Chrome by other means in
-you Slackware box. This package can install it for you and maintain
+you Slackware box. This program can install it for you and maintain
 it updated afterwards.
 
 The Slackware package created by this script is named "google-chrome-stable".
