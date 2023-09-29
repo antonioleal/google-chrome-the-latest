@@ -7,7 +7,7 @@
 #*          ------------------------------------------------------------          *
 #*                                                                                *
 #**********************************************************************************
-# Copyright 2022 Antonio Leal, Porto Salvo, Portugal
+# Copyright 2023 Antonio Leal, Porto Salvo, Portugal
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -43,10 +43,10 @@ TXZ_FILE = RPM_FILE[:-3] + 'txz'
 APP_PATH = '/opt/google-chrome-the-latest'
 LASTRUN = APP_PATH + '/lastrun'
 A_DAY_IN_SECONDS = 86400
-MESSAGE_1 = """Hey, whatismybrowser.com reported a new Google Chrome version: %s
+MESSAGE_1 = """Hey, whatismybrowser.com reported a new Google Chrome.
 
-Your version   : %s
-Actual version : %s
+Your version : %s
+New version  : %s
 
 Do you want to install it?
 """
@@ -77,7 +77,7 @@ class EndHandler:
         Gtk.main_quit()
 
 # Check the web for latest Chrome version.
-def get_latest_version():
+def get_web_version():
     try:
         # We are expecting sometning like:
         # xmlstr = """
@@ -89,10 +89,10 @@ def get_latest_version():
         # """
         xmlstr=os.popen('curl -s https://www.whatismybrowser.com/guides/the-latest-version/chrome | grep -B 1 -A 3 "<td>Chrome on <strong>Linux</strong></td>"').read()
         root = ET.fromstring(xmlstr)
-        latest_version = root[1].text.strip()
+        web_version = root[1].text.strip()
     except:
-        latest_version = 'undetermined'
-    return latest_version
+        web_version = 'undetermined'
+    return web_version
     
 # Check the current installed version, if there is one...
 def get_current_version():
@@ -103,25 +103,25 @@ def get_current_version():
     return current_version
 
 # Download from google and confirm the release version
-def get_actual_version():
+def get_new_version():
     os.chdir(APP_PATH)
     os.system('rm -rf %s' % RPM_FILE)
     os.system('/usr/bin/wget %s/%s' % (DOWNLOAD_LINK, RPM_FILE))
     return os.popen("rpm -q google-chrome-stable_current_x86_64.rpm | grep '^google' | awk -F - '{ print $4 }'").read().strip()
 
-def ask_permission_to_install(latest_version, current_version, actual_version):
+def ask_permission_to_install(current_version, new_version):
     global builder
     builder = Gtk.Builder()
     builder.add_from_file("permission-dialog.glade")
     builder.connect_signals(PermissionHandler())
     window = builder.get_object("permission-dialog")
     LabelMessage = builder.get_object("LabelMessage")
-    LabelMessage.set_text(MESSAGE_1 % (latest_version, current_version, actual_version))
+    LabelMessage.set_text(MESSAGE_1 % (current_version, new_version))
     window.show_all()
     Gtk.main()
 
-def install(actual_version):
-    INSTALL_FILE = 'google-chrome-stable-%s-x86_64-1.txz' % actual_version
+def install(new_version):
+    INSTALL_FILE = 'google-chrome-stable-%s-x86_64-1.txz' % new_version
     log = os.popen('/usr/bin/rpm2txz %s' % RPM_FILE).read()
     log += os.popen('mv %s %s' % (TXZ_FILE, INSTALL_FILE)).read()
     log += os.popen('/sbin/upgradepkg --install-new %s' % INSTALL_FILE).read()
@@ -130,14 +130,14 @@ def install(actual_version):
     log += os.popen('cp /opt/google/chrome/product_logo_256.png /usr/share/pixmaps/google-chrome.png').read()
     return log
 
-def end_dialog(actual_version, log):
+def end_dialog(new_version, log):
     global builder
     builder = Gtk.Builder()
     builder.add_from_file("end-dialog.glade")
     builder.connect_signals(EndHandler())
     window = builder.get_object("end-dialog")
     Log = builder.get_object("Label")
-    Log.set_text(MESSAGE_2 % actual_version)
+    Log.set_text(MESSAGE_2 % new_version)
     Log = builder.get_object("Log")
     Log.get_buffer().set_text(log)
     window.show_all()
@@ -172,20 +172,20 @@ def main():
             exit(0)
     os.system('touch %s' % LASTRUN)
 
-    latest_version = get_latest_version()
+    web_version = get_web_version()
     current_version = get_current_version()
 
-    if current_version != latest_version or upgrade_install:
-        actual_version = get_actual_version()
-        if current_version != actual_version or upgrade_install:
+    if current_version != web_version or upgrade_install:
+        new_version = get_new_version()
+        if current_version != new_version or upgrade_install:
             if not silent:
-                ask_permission_to_install(latest_version, current_version, actual_version)
+                ask_permission_to_install(current_version, new_version)
             else:
                 yesno = True
             if yesno:
-                log = install(actual_version)
+                log = install(new_version)
                 if not silent:
-                    end_dialog(actual_version, log)
+                    end_dialog(new_version, log)
 
 if __name__ == '__main__':
     main()

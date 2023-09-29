@@ -9,7 +9,7 @@
     <property name="vexpand">True</property>
     <property name="title" translatable="yes">Google Chrome, the latest</property>
     <property name="window-position">center</property>
-    <property name="icon">whatismybrowser-logo.png</property>
+    <property name="icon">google-chrome-the-latest.png</property>
     <signal name="destroy" handler="onDestroy" swapped="no"/>
     <child>
       <!-- n-columns=1 n-rows=3 -->
