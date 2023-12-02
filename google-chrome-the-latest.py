@@ -28,6 +28,12 @@
 #  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # $Id:$
 
+
+#**********************************************************************************
+#*                                                                                *
+#*                                    Libraries                                   *
+#*                                                                                *
+#**********************************************************************************
 import os
 import time
 import sys
@@ -36,6 +42,11 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
+#**********************************************************************************
+#*                                                                                *
+# Globals                                                                         *
+#*                                                                                *
+#**********************************************************************************
 # Program variables
 DOWNLOAD_LINK = 'https://dl.google.com/linux/direct'
 RPM_FILE = 'google-chrome-stable_current_x86_64.rpm'
@@ -43,6 +54,7 @@ TXZ_FILE = RPM_FILE[:-3] + 'txz'
 APP_PATH = '/opt/google-chrome-the-latest'
 LASTRUN = APP_PATH + '/lastrun'
 A_DAY_IN_SECONDS = 86400
+
 MESSAGE_1 = """Hey, whatismybrowser.com reported a new Google Chrome.
 
 Your version : %s
@@ -53,22 +65,48 @@ Do you want to install it?
 MESSAGE_2 = """Chrome is now at version %s
 Please review the installation output below:
 """
-yesno = False
+MESSAGE_3 = """Google Chrome versions available.
+
+Your version   : %s
+Latest version : %s
+
+You can now install it for the first time or, if
+applicable, upgrade to the newest version.
+"""
+command_confirm_upgrade = False
+command_manual_install = False
 builder = None
+
+#**********************************************************************************
+#*                                                                                *
+#                                  Gui Handlers                                   *
+#*                                                                                *
+#**********************************************************************************
+class ManualHandler:
+    def onDestroy(self, *args):
+        Gtk.main_quit()
+    def onButtonInstallPressed(self, ButtonInstall):
+        global builder, command_manual_install
+        window = builder.get_object("manual-dialog")
+        window.hide()
+        Gtk.main_quit()
+        command_manual_install = True
+    def onButtonQuitPressed(self, ButtonQuit):
+        Gtk.main_quit()
 
 class PermissionHandler:
     def onDestroy(self, *args):
         Gtk.main_quit()
     def onButtonYesPressed(self, ButtonYes):
-        global yesno, builder
+        global builder, command_confirm_upgrade
         window = builder.get_object("permission-dialog")        
         window.hide()
         Gtk.main_quit()
-        yesno = True
+        command_confirm_upgrade = True
     def onButtonNoPressed(self, ButtonNo):
-        global yesno    
+        global command_confirm_upgrade
         Gtk.main_quit()
-        yesno = False
+        command_confirm_upgrade = False
 
 class EndHandler:
     def onDestroy(self, *args):
@@ -76,6 +114,66 @@ class EndHandler:
     def onButtonOKPressed(self, ButtonOK):
         Gtk.main_quit()
 
+class NoVersionHandler:
+    def onDestroy(self, *args):
+        Gtk.main_quit()
+    def onButtonDonePressed(self, ButtonDone):
+        Gtk.main_quit()
+
+#**********************************************************************************
+#*                                                                                *
+#                                    Dialogs                                      *
+#*                                                                                *
+#**********************************************************************************
+def manual_dialog(current_version, new_version):
+    global builder
+    builder = Gtk.Builder()
+    builder.add_from_file("manual-dialog.glade")
+    builder.connect_signals(ManualHandler())
+    window = builder.get_object("manual-dialog")
+    LabelMessage = builder.get_object("LabelMessage")
+    LabelMessage.set_text(MESSAGE_3 % (current_version, new_version))
+    window.show_all()
+    Gtk.main()
+
+def permission_dialog(current_version, new_version):
+    global builder
+    builder = Gtk.Builder()
+    builder.add_from_file("permission-dialog.glade")
+    builder.connect_signals(PermissionHandler())
+    window = builder.get_object("permission-dialog")
+    LabelMessage = builder.get_object("LabelMessage")
+    LabelMessage.set_text(MESSAGE_1 % (current_version, new_version))
+    window.show_all()
+    Gtk.main()
+
+def end_dialog(new_version, log):
+    global builder
+    builder = Gtk.Builder()
+    builder.add_from_file("end-dialog.glade")
+    builder.connect_signals(EndHandler())
+    window = builder.get_object("end-dialog")
+    Log = builder.get_object("Label")
+    Log.set_text(MESSAGE_2 % new_version)
+    Log = builder.get_object("Log")
+    Log.get_buffer().set_text(log)
+    window.show_all()
+    Gtk.main()
+
+def no_version_dialog():
+    global builder
+    builder = Gtk.Builder()
+    builder.add_from_file("no-version-dialog.glade")
+    builder.connect_signals(NoVersionHandler())
+    window = builder.get_object("no-version-dialog")
+    window.show_all()
+    Gtk.main()
+
+#**********************************************************************************
+#*                                                                                *
+#                               Core functions                                    *
+#*                                                                                *
+#**********************************************************************************
 # Check the web for latest Chrome version.
 def get_web_version():
     try:
@@ -104,88 +202,85 @@ def get_current_version():
 
 # Download from google and confirm the release version
 def get_new_version():
-    os.chdir(APP_PATH)
-    os.system('rm -rf %s' % RPM_FILE)
     os.system('/usr/bin/wget %s/%s' % (DOWNLOAD_LINK, RPM_FILE))
     return os.popen("rpm -q google-chrome-stable_current_x86_64.rpm | grep '^google' | awk -F - '{ print $4 }'").read().strip()
 
-def ask_permission_to_install(current_version, new_version):
-    global builder
-    builder = Gtk.Builder()
-    builder.add_from_file("permission-dialog.glade")
-    builder.connect_signals(PermissionHandler())
-    window = builder.get_object("permission-dialog")
-    LabelMessage = builder.get_object("LabelMessage")
-    LabelMessage.set_text(MESSAGE_1 % (current_version, new_version))
-    window.show_all()
-    Gtk.main()
-
+# Installing on you box
 def install(new_version):
     INSTALL_FILE = 'google-chrome-stable-%s-x86_64-1.txz' % new_version
     log = os.popen('/usr/bin/rpm2txz %s' % RPM_FILE).read()
     log += os.popen('mv %s %s' % (TXZ_FILE, INSTALL_FILE)).read()
     log += os.popen('/sbin/upgradepkg --install-new %s' % INSTALL_FILE).read()
     log += os.popen('mv %s /tmp' % INSTALL_FILE).read()
-    log += os.popen('rm -rf %s' % RPM_FILE).read()
     log += os.popen('cp /opt/google/chrome/product_logo_256.png /usr/share/pixmaps/google-chrome.png').read()
     return log
 
-def end_dialog(new_version, log):
-    global builder
-    builder = Gtk.Builder()
-    builder.add_from_file("end-dialog.glade")
-    builder.connect_signals(EndHandler())
-    window = builder.get_object("end-dialog")
-    Log = builder.get_object("Label")
-    Log.set_text(MESSAGE_2 % new_version)
-    Log = builder.get_object("Log")
-    Log.get_buffer().set_text(log)
-    window.show_all()
-    Gtk.main()
+# remove rpm file
+def remove_rpm_file():
+    os.system('rm -rf %s' % RPM_FILE)
 
-  
+#**********************************************************************************
+#*                                                                                *
+#                                Main Function                                    *
+#*                                                                                *
+#**********************************************************************************
 def main():
-    global yesno
+    global command_confirm_upgrade, command_manual_install
+    os.chdir(APP_PATH)
+
     # Check if you are root
     if os.geteuid() != 0:
         print('You must run this script as root.')
         exit(0)
     
     # Read program arguments
-    silent = False
-    upgrade_install = False
+    param_silent = False
+    param_install_or_upgrade = False
+    param_show_gui = True
     for a in sys.argv:
-        if 'SILENT' == a.upper(): silent = True
-        if 'INSTALL' == a.upper(): upgrade_install = True
-        if 'UPGRADE' == a.upper(): upgrade_install = True
+        if 'NOGUI' == a.upper(): param_show_gui = False
+        if 'INSTALL' == a.upper(): param_install_or_upgrade = True
+        if 'UPGRADE' == a.upper(): param_install_or_upgrade = True
+        if 'SILENT' == a.upper(): param_silent = True
 
     # Exit if $DISPLAY is not set
-    if len(os.popen("echo $DISPLAY").read().strip()) == 0 and not silent:
+    if len(os.popen("echo $DISPLAY").read().strip()) == 0 and not param_silent:
         print('In order to run you must have an XServer running, otherwise use the "silent" program argument.')
         exit(0)
 
     # Only run once a day, even though we set cron.hourly
-    if os.path.exists(LASTRUN) and not upgrade_install:
+    if os.path.exists(LASTRUN) and not (param_install_or_upgrade or param_show_gui):
         ti_m = os.path.getmtime(LASTRUN)
         ti_n = time.time()
         if (ti_n - ti_m) < A_DAY_IN_SECONDS:
             exit(0)
     os.system('touch %s' % LASTRUN)
 
-    web_version = get_web_version()
     current_version = get_current_version()
-
-    if current_version != web_version or upgrade_install:
+    if param_show_gui:
         new_version = get_new_version()
-        if current_version != new_version or upgrade_install:
-            if not silent:
-                ask_permission_to_install(current_version, new_version)
-            else:
-                yesno = True
-            if yesno:
+        if current_version != new_version:
+            manual_dialog(current_version, new_version)
+            if command_manual_install:
                 log = install(new_version)
-                if not silent:
-                    end_dialog(new_version, log)
+                end_dialog(new_version, log)
+        else:
+            no_version_dialog()
+        remove_rpm_file()
+    else:
+        web_version = get_web_version()
+        if current_version != web_version or param_install_or_upgrade:
+            new_version = get_new_version()
+            if current_version != new_version or param_install_or_upgrade:
+                if not param_silent:
+                    permission_dialog(current_version, new_version)
+                else:
+                    command_confirm_upgrade = True
+                if command_confirm_upgrade:
+                    log = install(new_version)
+                    if not param_silent:
+                        end_dialog(new_version, log)
+            remove_rpm_file()
 
 if __name__ == '__main__':
     main()

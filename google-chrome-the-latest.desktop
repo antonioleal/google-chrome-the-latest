@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Google Chrome, the Latest
+GenericName=Google Chrome, the Latest
+Exec=gksu 'python3 /opt/google-chrome-the-latest/google-chrome-the-latest.py'
+Icon=google-chrome-the-latest.png
+Terminal=false
+Type=Application
+Categories=System;
+StartupNotify=false

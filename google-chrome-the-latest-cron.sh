@@ -43,6 +43,6 @@ done
 
 export XAUTHORITY=/home/$USERNAME/.Xauthority
 export DISPLAY=:0
-python3 /opt/google-chrome-the-latest/google-chrome-the-latest.py
+python3 /opt/google-chrome-the-latest/google-chrome-the-latest.py NOGUI
 
 
