@@ -2,22 +2,10 @@ Please make sure you have not installed Chrome by other means in
 you Slackware box. This program can install it for you and maintain
 it updated afterwards.
 
-The Slackware package created by this script is named "google-chrome-stable".
+To install, after unpacking the files, you need to run the provided install.sh
+as root. An uninstall.sh script is also provided.
 
 In order to run this program you need to install the packages Python3, PyGtk,
 both available on the stock Slackware distro and gksu from SlackBuilds.org.
 
-To install, after unpacking the files, you need to run the provided install.sh
-as root. An uninstall.sh script is also provided.
-
 Thats it!
-
-To install the browser itself an icon is provided in the menu
-that you can use to manually install or upgrade Google Chrome.
-
-From the command line you can install the browser by simply by running:
-/opt/google-chrome-the-latest/google-chrome-the-latest.py install
-
-At any time you can force a download from Google site and upgrade
-without any pop-up window with:
-/opt/google-chrome-the-latest/google-chrome-the-latest.py silent upgrade

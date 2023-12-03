@@ -258,6 +258,7 @@ def main():
             exit(0)
     os.system('touch %s' % LASTRUN)
 
+    # Core processing
     current_version = get_current_version()
     if param_show_gui:
         new_version = get_new_version()
