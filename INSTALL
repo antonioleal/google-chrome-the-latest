@@ -1,5 +1,5 @@
 Please make sure you have not installed Chrome by other means in
-you Slackware box. This program can install it for you and maintain
+your Slackware box. This program can install it for you and maintain
 it updated afterwards.
 
 To install, after unpacking the files, you need to run the provided install.sh
@@ -8,4 +8,4 @@ as root. An uninstall.sh script is also provided.
 In order to run this program you need to install the packages Python3, PyGtk,
 both available on the stock Slackware distro and gksu from SlackBuilds.org.
 
-Thats it!
+That’s it!
