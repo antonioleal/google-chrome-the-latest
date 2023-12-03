@@ -236,12 +236,14 @@ def main():
     # Read program arguments
     param_silent = False
     param_install_or_upgrade = False
-    param_show_gui = True
+    param_show_gui = False
     for a in sys.argv:
-        if 'NOGUI' == a.upper(): param_show_gui = False
-        if 'INSTALL' == a.upper(): param_install_or_upgrade = True
-        if 'UPGRADE' == a.upper(): param_install_or_upgrade = True
-        if 'SILENT' == a.upper(): param_silent = True
+        if 'GUI' == a.upper():
+            param_show_gui = True
+        if 'INSTALL' == a.upper() or 'UPGRADE' == a.upper() or 'UPDATE' == a.upper():
+            param_install_or_upgrade = True
+        if 'SILENT' == a.upper():
+            param_silent = True
 
     # Exit if $DISPLAY is not set
     if len(os.popen("echo $DISPLAY").read().strip()) == 0 and not param_silent:
