@@ -5,29 +5,33 @@ version available and updates it on your Slackware box.
 
 It identifies a new version by parsing the web-page at
 https://www.whatismybrowser.com/guides/the-latest-version/chrome
-and comparing with the chrome version currently installed.
-Chrome is then downloaded directly from Google and converted to
-txz using the standard rpm2txz command.
+and comparing with the chrome version number currently installed.
+Chrome is then downloaded directly from Google site, converted to
+txz using the standard rpm2txz command, and upgraded.
 
 You can run this script manually or automatically with the
-provided cron.hourly script.
-This cron script will attempt to identify which user to notify,
-otherwise you can force the variable to USERNAME=’your username’
+provided cron.hourly script.The cron script will attempt to
+identify which user to notify, otherwise you can edit it and set
+the variable USERNAME=’your username’
 
 In order to avoid excessive hits on whatismybrowser.com actual
 checks are limited to "once a day", but you can bypass this with the
 arguments "install" or "upgrade". These allow the user to force a 
 download from Google and perforam an install or an upgrade,
-if one is required.
+if one is required of course.
 Normally it is asked if you want to install the new version, but
 providing the argument "silent" will just update with no
 human intervention. 
 
+Optionally you can also start the program manually using the
+icon available in the system menu for an immediate check if
+new version exists.
+
 Examples:
-If you don't have yet Chrome installed you can do so by
-simply by running:
+1. If you don't have yet Chrome installed you can do so by
+simply by running from the command line:
 /opt/google-chrome-the-latest/google-chrome-the-latest.py install
 
-At any time you can force a download from Google site and upgrade
-without any pop-up window with:
+2. You can force a download from Google site and upgrade,
+without any pop-up window, using the command line with:
 /opt/google-chrome-the-latest/google-chrome-the-latest.py silent upgrade
