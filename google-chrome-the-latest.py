@@ -7,7 +7,7 @@
 #*          ------------------------------------------------------------          *
 #*                                                                                *
 #**********************************************************************************
-# Copyright 2023 Antonio Leal, Porto Salvo, Portugal
+# Copyright 2024 Antonio Leal, Porto Salvo, Portugal
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -194,9 +194,12 @@ def get_web_version():
     
 # Check the current installed version, if there is one...
 def get_current_version():
-    try:
-        current_version = os.popen('google-chrome-stable --version').read().split()[2]
-    except:
+    if os.path.isfile('/usr/bin/google-chrome-stable'):
+        try:
+            current_version = os.popen('google-chrome-stable --version').read().split()[2]
+        except:
+            current_version = 'not found'
+    else:
         current_version = 'not found'
     return current_version
 
