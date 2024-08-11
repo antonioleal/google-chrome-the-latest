@@ -7,7 +7,7 @@
 #*          ------------------------------------------------------------          *
 #*                                                                                *
 #**********************************************************************************
-# Copyright 2024 Antonio Leal, Porto Salvo, Portugal
+# Copyright 2023-2024 Antonio Leal, Porto Salvo, Portugal
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
