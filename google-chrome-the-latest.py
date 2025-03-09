@@ -7,7 +7,7 @@
 #*          ------------------------------------------------------------          *
 #*                                                                                *
 #**********************************************************************************
-# Copyright 2023-2024 Antonio Leal, Porto Salvo, Portugal
+# Copyright 2023-2025 Antonio Leal, Porto Salvo, Portugal
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -49,8 +49,8 @@ from gi.repository import Gtk
 #**********************************************************************************
 # Program variables
 DOWNLOAD_LINK = 'https://dl.google.com/linux/direct'
-RPM_FILE = 'google-chrome-stable_current_x86_64.rpm'
-TXZ_FILE = RPM_FILE[:-3] + 'txz'
+DEB_FILE = 'google-chrome-stable_current_amd64.deb'
+TXZ_FILE = DEB_FILE[:-3] + 'txz'
 APP_PATH = '/opt/google-chrome-the-latest'
 LASTRUN = APP_PATH + '/lastrun'
 A_DAY_IN_SECONDS = 86400
@@ -125,36 +125,36 @@ class NoVersionHandler:
 #                                    Dialogs                                      *
 #*                                                                                *
 #**********************************************************************************
-def manual_dialog(current_version, new_version):
+def manual_dialog(current_version, latest_version):
     global builder
     builder = Gtk.Builder()
-    builder.add_from_file("manual-dialog.glade")
+    builder.add_from_file("dialogs/manual-dialog.glade")
     builder.connect_signals(ManualHandler())
     window = builder.get_object("manual-dialog")
     LabelMessage = builder.get_object("LabelMessage")
-    LabelMessage.set_text(MESSAGE_3 % (current_version, new_version))
+    LabelMessage.set_text(MESSAGE_3 % (current_version, latest_version))
     window.show_all()
     Gtk.main()
 
-def permission_dialog(current_version, new_version):
+def permission_dialog(current_version, latest_version):
     global builder
     builder = Gtk.Builder()
-    builder.add_from_file("permission-dialog.glade")
+    builder.add_from_file("dialogs/permission-dialog.glade")
     builder.connect_signals(PermissionHandler())
     window = builder.get_object("permission-dialog")
     LabelMessage = builder.get_object("LabelMessage")
-    LabelMessage.set_text(MESSAGE_1 % (current_version, new_version))
+    LabelMessage.set_text(MESSAGE_1 % (current_version, latest_version))
     window.show_all()
     Gtk.main()
 
-def end_dialog(new_version, log):
+def end_dialog(latest_version, log):
     global builder
     builder = Gtk.Builder()
-    builder.add_from_file("end-dialog.glade")
+    builder.add_from_file("dialogs/end-dialog.glade")
     builder.connect_signals(EndHandler())
     window = builder.get_object("end-dialog")
     Log = builder.get_object("Label")
-    Log.set_text(MESSAGE_2 % new_version)
+    Log.set_text(MESSAGE_2 % latest_version)
     Log = builder.get_object("Log")
     Log.get_buffer().set_text(log)
     window.show_all()
@@ -163,7 +163,7 @@ def end_dialog(new_version, log):
 def no_version_dialog():
     global builder
     builder = Gtk.Builder()
-    builder.add_from_file("no-version-dialog.glade")
+    builder.add_from_file("dialogs/no-version-dialog.glade")
     builder.connect_signals(NoVersionHandler())
     window = builder.get_object("no-version-dialog")
     window.show_all()
@@ -203,24 +203,38 @@ def get_current_version():
         current_version = 'not found'
     return current_version
 
-# Download from google and confirm the release version
-def get_new_version():
-    os.system('/usr/bin/wget %s/%s' % (DOWNLOAD_LINK, RPM_FILE))
-    return os.popen("rpm -q google-chrome-stable_current_x86_64.rpm | grep '^google' | awk -F - '{ print $4 }'").read().strip()
+# Download deb package from Google
+def download_deb_package():
+    os.chdir("SlackBuild")
+    os.system('/usr/bin/wget %s/%s' % (DOWNLOAD_LINK, DEB_FILE))
+    os.chdir("..")
 
-# Installing on you box
-def install(new_version):
-    INSTALL_FILE = 'google-chrome-stable-%s-x86_64-1.txz' % new_version
-    log = os.popen('/usr/bin/rpm2txz %s' % RPM_FILE).read()
-    log += os.popen('mv %s %s' % (TXZ_FILE, INSTALL_FILE)).read()
-    log += os.popen('/sbin/upgradepkg --install-new %s' % INSTALL_FILE).read()
-    log += os.popen('mv %s /tmp' % INSTALL_FILE).read()
-    log += os.popen('cp /opt/google/chrome/product_logo_256.png /usr/share/pixmaps/google-chrome.png').read()
+# Get the version number from the deb file
+def get_deb_version():
+    os.chdir("SlackBuild")
+    try:
+        deb_version = os.popen('ar p ./google-chrome-stable_current_amd64.deb control.tar.xz | tar xJOf - ./control | grep Version | cut -d " " -f 2 | cut -d "-" -f 1').read().strip()
+    except:
+        deb_version = "not found"
+    os.chdir("..")
+    return deb_version
+
+# Installing on your box
+def install(latest_version):
+    os.chdir("SlackBuild")
+    log = "Installing Google Chrome " + str(latest_version)
+    log = os.popen('chmod +x google-chrome-stable.SlackBuild').read()
+    log = os.popen('./google-chrome-stable.SlackBuild').read()
+    log += os.popen('/sbin/upgradepkg --install-new /tmp/google-chrome-stable-%s-x86_64-1.txz' % latest_version).read()
+    #log += os.popen('cp /opt/google/chrome/product_logo_256.png /usr/share/pixmaps/google-chrome.png').read()
+    os.chdir("..")
     return log
 
 # remove rpm file
-def remove_rpm_file():
-    os.system('rm -rf %s' % RPM_FILE)
+def delete_deb_package():
+    os.chdir("SlackBuild")
+    os.system('rm -rf %s' % DEB_FILE)
+    os.chdir("..")
 
 #**********************************************************************************
 #*                                                                                *
@@ -261,32 +275,34 @@ def main():
             exit(0)
     os.system('touch %s' % LASTRUN)
 
-    # Core processing
-    current_version = get_current_version()
+    current_version = str(get_current_version()).strip()
+    latest_version = str(get_web_version()).strip()
+
     if param_show_gui:
-        new_version = get_new_version()
-        if current_version != new_version:
-            manual_dialog(current_version, new_version)
+        if current_version != latest_version:
+            download_deb_package()
+            latest_version = get_deb_version()
+            manual_dialog(current_version, latest_version)
             if command_manual_install:
-                log = install(new_version)
-                end_dialog(new_version, log)
+                log = install(latest_version)
+                end_dialog(latest_version, log)
+            delete_deb_package()
         else:
             no_version_dialog()
-        remove_rpm_file()
     else:
-        web_version = get_web_version()
-        if current_version != web_version or param_install_or_upgrade:
-            new_version = get_new_version()
-            if current_version != new_version or param_install_or_upgrade:
+        if current_version != latest_version or param_install_or_upgrade:
+            download_deb_package()
+            latest_version = get_deb_version()
+            if not param_silent:
+                permission_dialog(current_version, latest_version)
+            else:
+                command_confirm_upgrade = True
+            if command_confirm_upgrade:
+                log = install(latest_version)
                 if not param_silent:
-                    permission_dialog(current_version, new_version)
-                else:
-                    command_confirm_upgrade = True
-                if command_confirm_upgrade:
-                    log = install(new_version)
-                    if not param_silent:
-                        end_dialog(new_version, log)
-            remove_rpm_file()
+                    end_dialog(latest_version, log)
+            delete_deb_package()
 
 if __name__ == '__main__':
     main()
+

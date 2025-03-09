@@ -6,8 +6,10 @@ version available and updates it on your Slackware box.
 It identifies a new version by parsing the web-page at
 https://www.whatismybrowser.com/guides/the-latest-version/chrome
 and comparing with the chrome version number currently installed.
-Chrome is then downloaded directly from Google site, converted to
-txz using the standard rpm2txz command, and upgraded.
+If they differ the program downloads the "deb release" directly
+from Google and then it uses the SlackBuild described in
+    slackware64-15.0/extra/google-chrome
+to build your binary package.
 
 You can run this script manually or automatically with the
 provided cron.hourly script. The cron script will attempt to
@@ -44,4 +46,5 @@ Workflows:
 
 4. From the command line, you can force a Chrome download and
    upgrade if required, without any pop-up window, with:
-   /opt/google-chrome-the-latest/google-chrome-the-latest.py silent upgrade
+   /opt/google-chrome-the-latest/google-chrome-the-latest.py \
+   silent upgrade

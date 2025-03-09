@@ -1,0 +1,43 @@
+Google Chrome (Open Source Web Browser)
+---------------------------------------
+
+Here's how to install Google Chrome on Slackware.
+
+
+First, go to the Google Chrome site:
+
+http://www.google.com/chrome
+
+Click the download button, and select either:
+
+    < >  32 bit .deb (for Debian/Ubuntu)
+OR
+    < >  64 bit .deb (for Debian/Ubuntu)
+
+
+Read and accept the license terms, and download the .deb package.
+
+
+Then, with the google-chrome-stable_current_i386.deb or 
+google-chrome-stable_current_amd64.deb package in the same directory
+as the google-chrome.SlackBuild script, run the script as root to
+convert the .deb to a Slackware .txz:
+
+./google-chrome.SlackBuild
+
+This will produce a Slackware compatible .txz package.  The exact
+version number in the package filename will depend on the version
+of Google Chrome found in the .deb package, but it will be something
+like:  google-chrome-10.0.648.151-x86_64-1.txz
+
+You'll find the output package in the /tmp directory.
+
+
+Then, install the package (again as root):
+
+cd /tmp
+upgradepkg --install-new google-chrome-10.0.648.151-x86_64-1.txz
+
+
+Enjoy!  :-)
+
