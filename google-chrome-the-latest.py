@@ -73,7 +73,13 @@ Latest version : %s
 You can now install it for the first time or, if
 applicable, upgrade to the newest version.
 """
-command_confirm_upgrade = False
+MESSAGE_4 = """Google Chrome versions is 'undetermined'
+because it could not be read from whatismybrowser.com.
+
+Do you want to continue all the same?
+"""
+
+command_permission = False
 command_manual_install = False
 builder = None
 
@@ -98,15 +104,15 @@ class PermissionHandler:
     def onDestroy(self, *args):
         Gtk.main_quit()
     def onButtonYesPressed(self, ButtonYes):
-        global builder, command_confirm_upgrade
+        global builder, command_permission
         window = builder.get_object("permission-dialog")        
         window.hide()
         Gtk.main_quit()
-        command_confirm_upgrade = True
+        command_permission = True
     def onButtonNoPressed(self, ButtonNo):
-        global command_confirm_upgrade
+        global command_permission
         Gtk.main_quit()
-        command_confirm_upgrade = False
+        command_permission = False
 
 class EndHandler:
     def onDestroy(self, *args):
@@ -136,14 +142,14 @@ def manual_dialog(current_version, latest_version):
     window.show_all()
     Gtk.main()
 
-def permission_dialog(current_version, latest_version):
+def permission_dialog(message):
     global builder
     builder = Gtk.Builder()
     builder.add_from_file("dialogs/permission-dialog.glade")
     builder.connect_signals(PermissionHandler())
     window = builder.get_object("permission-dialog")
     LabelMessage = builder.get_object("LabelMessage")
-    LabelMessage.set_text(MESSAGE_1 % (current_version, latest_version))
+    LabelMessage.set_text(message)
     window.show_all()
     Gtk.main()
 
@@ -242,7 +248,7 @@ def delete_deb_package():
 #*                                                                                *
 #**********************************************************************************
 def main():
-    global command_confirm_upgrade, command_manual_install
+    global command_permission, command_manual_install
     os.chdir(APP_PATH)
 
     # Check if you are root
@@ -277,6 +283,10 @@ def main():
 
     current_version = str(get_current_version()).strip()
     latest_version = str(get_web_version()).strip()
+    if latest_version == "undetermined" and not param_silent:
+        permission_dialog(MESSAGE_4)
+        if not command_permission:
+            exit(0)
 
     if param_show_gui:
         if current_version != latest_version:
@@ -294,10 +304,10 @@ def main():
             download_deb_package()
             latest_version = get_deb_version()
             if not param_silent:
-                permission_dialog(current_version, latest_version)
+                permission_dialog(MESSAGE_1 % (current_version, latest_version))
             else:
-                command_confirm_upgrade = True
-            if command_confirm_upgrade:
+                command_permission = True
+            if command_permission:
                 log = install(latest_version)
                 if not param_silent:
                     end_dialog(latest_version, log)
