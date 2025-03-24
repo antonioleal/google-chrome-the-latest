@@ -55,20 +55,22 @@ APP_PATH = '/opt/google-chrome-the-latest'
 LASTRUN = APP_PATH + '/lastrun'
 A_DAY_IN_SECONDS = 86400
 
-MESSAGE_1 = """Hey, whatismybrowser.com reported a new Google Chrome.
+MESSAGE_1 = """Hey, whatismybrowser.com reports a different Google Chrome version.
 
-Your version : %s
-New version  : %s
+Whatismybrowser.com  : %s
+Your current version : %s
+Actual new version   : %s
 
 Do you want to install it?
 """
 MESSAGE_2 = """Chrome is now at version %s
 Please review the installation output below:
 """
-MESSAGE_3 = """Google Chrome versions available.
+MESSAGE_3 = """Google Chrome versions listed at whatismybrowser.com vs available ones.
 
-Your version   : %s
-Latest version : %s
+Whatismybrowser.com  : %s
+Your current version : %s
+Actual new version   : %s
 
 You can now install it for the first time or, if
 applicable, upgrade to the newest version.
@@ -131,14 +133,14 @@ class NoVersionHandler:
 #                                    Dialogs                                      *
 #*                                                                                *
 #**********************************************************************************
-def manual_dialog(current_version, latest_version):
+def manual_dialog(web_version, installed_version, deb_version):
     global builder
     builder = Gtk.Builder()
     builder.add_from_file("dialogs/manual-dialog.glade")
     builder.connect_signals(ManualHandler())
     window = builder.get_object("manual-dialog")
     LabelMessage = builder.get_object("LabelMessage")
-    LabelMessage.set_text(MESSAGE_3 % (current_version, latest_version))
+    LabelMessage.set_text(MESSAGE_3 % (web_version, installed_version, deb_version))
     window.show_all()
     Gtk.main()
 
@@ -153,14 +155,14 @@ def permission_dialog(message):
     window.show_all()
     Gtk.main()
 
-def end_dialog(latest_version, log):
+def end_dialog(deb_version, log):
     global builder
     builder = Gtk.Builder()
     builder.add_from_file("dialogs/end-dialog.glade")
     builder.connect_signals(EndHandler())
     window = builder.get_object("end-dialog")
     Log = builder.get_object("Label")
-    Log.set_text(MESSAGE_2 % latest_version)
+    Log.set_text(MESSAGE_2 % deb_version)
     Log = builder.get_object("Log")
     Log.get_buffer().set_text(log)
     window.show_all()
@@ -199,15 +201,15 @@ def get_web_version():
     return web_version
     
 # Check the current installed version, if there is one...
-def get_current_version():
+def get_installed_version():
     if os.path.isfile('/usr/bin/google-chrome-stable'):
         try:
-            current_version = os.popen('google-chrome-stable --version').read().split()[2]
+            installed_version = os.popen('google-chrome-stable --version').read().split()[2]
         except:
-            current_version = 'not found'
+            installed_version = 'not found'
     else:
-        current_version = 'not found'
-    return current_version
+        installed_version = 'not found'
+    return installed_version
 
 # Download deb package from Google
 def download_deb_package():
@@ -226,12 +228,12 @@ def get_deb_version():
     return deb_version
 
 # Installing on your box
-def install(latest_version):
+def install(deb_version):
     os.chdir("SlackBuild")
-    log = "Installing Google Chrome " + str(latest_version)
+    log = "Installing Google Chrome " + str(deb_version)
     log = os.popen('chmod +x google-chrome-stable.SlackBuild').read()
     log = os.popen('./google-chrome-stable.SlackBuild').read()
-    log += os.popen('/sbin/upgradepkg --install-new /tmp/google-chrome-stable-%s-x86_64-1.txz' % latest_version).read()
+    log += os.popen('/sbin/upgradepkg --install-new /tmp/google-chrome-stable-%s-x86_64-1.txz' % deb_version).read()
     #log += os.popen('cp /opt/google/chrome/product_logo_256.png /usr/share/pixmaps/google-chrome.png').read()
     os.chdir("..")
     return log
@@ -239,7 +241,7 @@ def install(latest_version):
 # remove rpm file
 def delete_deb_package():
     os.chdir("SlackBuild")
-    os.system('rm -rf %s' % DEB_FILE)
+    os.system('rm -rf %s*' % DEB_FILE)
     os.chdir("..")
 
 #**********************************************************************************
@@ -281,36 +283,40 @@ def main():
             exit(0)
     os.system('touch %s' % LASTRUN)
 
-    current_version = str(get_current_version()).strip()
-    latest_version = str(get_web_version()).strip()
-    if latest_version == "undetermined" and not param_silent:
+    installed_version = str(get_installed_version()).strip()
+    web_version = str(get_web_version()).strip()
+    if web_version == "undetermined" and not param_silent:
         permission_dialog(MESSAGE_4)
         if not command_permission:
             exit(0)
 
     if param_show_gui:
-        if current_version != latest_version:
+        if installed_version != web_version:
             download_deb_package()
-            latest_version = get_deb_version()
-            manual_dialog(current_version, latest_version)
-            if command_manual_install:
-                log = install(latest_version)
-                end_dialog(latest_version, log)
+            deb_version = str(get_deb_version()).strip()
+            if installed_version != deb_version:
+                manual_dialog(web_version, installed_version, deb_version)
+                if command_manual_install:
+                    log = install(deb_version)
+                    end_dialog(deb_version, log)
+            else:
+                no_version_dialog()
             delete_deb_package()
         else:
             no_version_dialog()
     else:
-        if current_version != latest_version or param_install_or_upgrade:
+        if installed_version != web_version or param_install_or_upgrade:
             download_deb_package()
-            latest_version = get_deb_version()
-            if not param_silent:
-                permission_dialog(MESSAGE_1 % (current_version, latest_version))
-            else:
-                command_permission = True
-            if command_permission:
-                log = install(latest_version)
+            deb_version = str(get_deb_version()).strip()
+            if installed_version != deb_version:
                 if not param_silent:
-                    end_dialog(latest_version, log)
+                    permission_dialog(MESSAGE_1 % (web_version, installed_version, deb_version))
+                else:
+                    command_permission = True
+                if command_permission:
+                    log = install(deb_version)
+                    if not param_silent:
+                        end_dialog(deb_version, log)
             delete_deb_package()
 
 if __name__ == '__main__':
