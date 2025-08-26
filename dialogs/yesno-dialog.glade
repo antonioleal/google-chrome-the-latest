@@ -2,10 +2,10 @@
 <!-- Generated with glade 3.38.2 -->
 <interface>
   <requires lib="gtk+" version="3.24"/>
-  <object class="GtkDialog" id="manual-dialog">
+  <object class="GtkDialog" id="yesno-dialog">
     <property name="name">permission-dialog</property>
     <property name="can-focus">False</property>
-    <property name="title" translatable="yes">Google Chrome, the latest</property>
+    <property name="title" translatable="yes">Google CHrome, the latest</property>
     <property name="resizable">False</property>
     <property name="window-position">center-always</property>
     <property name="icon">google-chrome-the-latest.png</property>
@@ -21,13 +21,13 @@
             <property name="can-focus">False</property>
             <property name="layout-style">end</property>
             <child>
-              <object class="GtkButton" id="ButtonInstall">
-                <property name="label" translatable="yes">Install / Upgrade</property>
-                <property name="name">ButtonInstall</property>
+              <object class="GtkButton" id="ButtonYes">
+                <property name="label" translatable="yes">Yes</property>
+                <property name="name">ButtonYes</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
-                <signal name="clicked" handler="onButtonInstallPressed" swapped="no"/>
+                <signal name="clicked" handler="onButtonYesPressed" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -36,13 +36,13 @@
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="ButtonQuit">
-                <property name="label" translatable="yes">Quit</property>
-                <property name="name">ButtonQuit</property>
+              <object class="GtkButton" id="ButtonNo">
+                <property name="label" translatable="yes">No</property>
+                <property name="name">ButtonNo</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
-                <signal name="clicked" handler="onButtonQuitPressed" swapped="no"/>
+                <signal name="clicked" handler="onButtonNoPressed" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">True</property>

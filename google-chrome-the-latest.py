@@ -7,6 +7,7 @@
 #*          ------------------------------------------------------------          *
 #*                                                                                *
 #**********************************************************************************
+#
 # Copyright 2023-2025 Antonio Leal, Porto Salvo, Portugal
 # All rights reserved.
 #
@@ -35,6 +36,7 @@
 #*                                                                                *
 #**********************************************************************************
 import os
+import subprocess
 import time
 import sys
 import xml.etree.ElementTree as ET
@@ -63,9 +65,11 @@ Actual new version   : %s
 
 Do you want to install it?
 """
+
 MESSAGE_2 = """Chrome is now at version %s
 Please review the installation output below:
 """
+
 MESSAGE_3 = """Google Chrome versions listed at whatismybrowser.com vs available ones.
 
 Whatismybrowser.com  : %s
@@ -75,12 +79,28 @@ Actual new version   : %s
 You can now install it for the first time or, if
 applicable, upgrade to the newest version.
 """
+
 MESSAGE_4 = """Google Chrome versions is 'undetermined'
 because it could not be read from whatismybrowser.com.
 
 Do you want to continue all the same?
 """
 
+MESSAGE_5 = """Congratulations !
+
+Your Google Chrome is already at the
+latest version : %s
+"""
+
+MESSAGE_6 = """Failed to download the %s archive.
+
+Please re-run the program
+using the menu launcher.
+"""
+
+command_ok = False
+command_yes = False
+command_no = False
 command_permission = False
 command_manual_install = False
 builder = None
@@ -90,31 +110,31 @@ builder = None
 #                                  Gui Handlers                                   *
 #*                                                                                *
 #**********************************************************************************
-class ManualHandler:
-    def onDestroy(self, *args):
-        Gtk.main_quit()
-    def onButtonInstallPressed(self, ButtonInstall):
-        global builder, command_manual_install
-        window = builder.get_object("manual-dialog")
-        window.hide()
-        Gtk.main_quit()
-        command_manual_install = True
-    def onButtonQuitPressed(self, ButtonQuit):
-        Gtk.main_quit()
-
-class PermissionHandler:
+class YesNoHandler:
     def onDestroy(self, *args):
         Gtk.main_quit()
     def onButtonYesPressed(self, ButtonYes):
-        global builder, command_permission
-        window = builder.get_object("permission-dialog")        
+        global builder, command_yes
+        window = builder.get_object("yesno-dialog")
         window.hide()
         Gtk.main_quit()
-        command_permission = True
+        command_yes = True
     def onButtonNoPressed(self, ButtonNo):
-        global command_permission
+        global builder, command_no
+        window = builder.get_object("yesno-dialog")
+        window.hide()
         Gtk.main_quit()
-        command_permission = False
+        command_no = True
+
+class OKHandler:
+    def onDestroy(self, *args):
+        Gtk.main_quit()
+    def onButtonOKPressed(self, ButtonOK):
+        global builder, command_ok
+        window = builder.get_object("ok-dialog")
+        window.hide()
+        Gtk.main_quit()
+        command_ok = True
 
 class EndHandler:
     def onDestroy(self, *args):
@@ -122,34 +142,28 @@ class EndHandler:
     def onButtonOKPressed(self, ButtonOK):
         Gtk.main_quit()
 
-class NoVersionHandler:
-    def onDestroy(self, *args):
-        Gtk.main_quit()
-    def onButtonDonePressed(self, ButtonDone):
-        Gtk.main_quit()
-
 #**********************************************************************************
 #*                                                                                *
 #                                    Dialogs                                      *
 #*                                                                                *
 #**********************************************************************************
-def manual_dialog(web_version, installed_version, deb_version):
+def yesno_dialog(message):
     global builder
     builder = Gtk.Builder()
-    builder.add_from_file("dialogs/manual-dialog.glade")
-    builder.connect_signals(ManualHandler())
-    window = builder.get_object("manual-dialog")
+    builder.add_from_file("dialogs/yesno-dialog.glade")
+    builder.connect_signals(YesNoHandler())
+    window = builder.get_object("yesno-dialog")
     LabelMessage = builder.get_object("LabelMessage")
-    LabelMessage.set_text(MESSAGE_3 % (web_version, installed_version, deb_version))
+    LabelMessage.set_text(message)
     window.show_all()
     Gtk.main()
 
-def permission_dialog(message):
+def ok_dialog(message):
     global builder
     builder = Gtk.Builder()
-    builder.add_from_file("dialogs/permission-dialog.glade")
-    builder.connect_signals(PermissionHandler())
-    window = builder.get_object("permission-dialog")
+    builder.add_from_file("dialogs/ok-dialog.glade")
+    builder.connect_signals(OKHandler())
+    window = builder.get_object("ok-dialog")
     LabelMessage = builder.get_object("LabelMessage")
     LabelMessage.set_text(message)
     window.show_all()
@@ -165,15 +179,6 @@ def end_dialog(deb_version, log):
     Log.set_text(MESSAGE_2 % deb_version)
     Log = builder.get_object("Log")
     Log.get_buffer().set_text(log)
-    window.show_all()
-    Gtk.main()
-
-def no_version_dialog():
-    global builder
-    builder = Gtk.Builder()
-    builder.add_from_file("dialogs/no-version-dialog.glade")
-    builder.connect_signals(NoVersionHandler())
-    window = builder.get_object("no-version-dialog")
     window.show_all()
     Gtk.main()
 
@@ -212,10 +217,20 @@ def get_installed_version():
     return installed_version
 
 # Download deb package from Google
-def download_deb_package():
+def download_deb_package(ver):
+    #os.chdir("SlackBuild")
+    #os.system('/usr/bin/wget %s/%s' % (DOWNLOAD_LINK, DEB_FILE))
+    #os.chdir("..")
     os.chdir("SlackBuild")
-    os.system('/usr/bin/wget %s/%s' % (DOWNLOAD_LINK, DEB_FILE))
+    os.system('/usr/bin/wget %s/%s' % (DOWNLOAD_LINK , DEB_FILE))
+    result1 = subprocess.run('ar x %s 2>&1' % DEB_FILE, capture_output=True, shell=True)
+    result2 = subprocess.run('tar tvf data.tar.xz 2>&1', capture_output=True, shell=True)
+    subprocess.run('rm -rf data.tar.xz control.tar.xz debian-binary', capture_output=False, shell=True)
     os.chdir("..")
+    if (result1.returncode != 0) or (result2.returncode != 0):
+        ok_dialog(MESSAGE_6 % DEB_FILE)
+        delete_deb_package()
+        exit(0)
 
 # Get the version number from the deb file
 def get_deb_version():
@@ -234,7 +249,6 @@ def install(deb_version):
     log = os.popen('chmod +x google-chrome-stable.SlackBuild').read()
     log = os.popen('./google-chrome-stable.SlackBuild').read()
     log += os.popen('/sbin/upgradepkg --install-new /tmp/google-chrome-stable-%s-x86_64-1.txz' % deb_version).read()
-    #log += os.popen('cp /opt/google/chrome/product_logo_256.png /usr/share/pixmaps/google-chrome.png').read()
     os.chdir("..")
     return log
 
@@ -250,12 +264,14 @@ def delete_deb_package():
 #*                                                                                *
 #**********************************************************************************
 def main():
-    global command_permission, command_manual_install
+    global command_yes, command_no, command_ok
     os.chdir(APP_PATH)
 
     # Check if you are root
     if os.geteuid() != 0:
-        print('You must run this script as root.')
+        msg='You must run this script as root.'
+        print(msg)
+        ok_dialog(msg)
         exit(0)
     
     # Read program arguments
@@ -286,34 +302,34 @@ def main():
     installed_version = str(get_installed_version()).strip()
     web_version = str(get_web_version()).strip()
     if web_version == "undetermined" and not param_silent:
-        permission_dialog(MESSAGE_4)
-        if not command_permission:
+        yesno_dialog(MESSAGE_4)
+        if not command_yes:
             exit(0)
 
     if param_show_gui:
         if installed_version != web_version:
-            download_deb_package()
+            download_deb_package(web_version)
             deb_version = str(get_deb_version()).strip()
             if installed_version != deb_version:
-                manual_dialog(web_version, installed_version, deb_version)
-                if command_manual_install:
+                yesno_dialog(MESSAGE_3 % (web_version, installed_version, deb_version))
+                if command_yes:
                     log = install(deb_version)
                     end_dialog(deb_version, log)
             else:
-                no_version_dialog()
+                ok_dialog(MESSAGE_5 % installed_version)
             delete_deb_package()
         else:
-            no_version_dialog()
+            ok_dialog(MESSAGE_5 % installed_version)
     else:
         if installed_version != web_version or param_install_or_upgrade:
-            download_deb_package()
+            download_deb_package(web_version)
             deb_version = str(get_deb_version()).strip()
             if installed_version != deb_version:
                 if not param_silent:
-                    permission_dialog(MESSAGE_1 % (web_version, installed_version, deb_version))
+                    yesno_dialog(MESSAGE_1 % (web_version, installed_version, deb_version))
                 else:
-                    command_permission = True
-                if command_permission:
+                    command_yes = True
+                if command_yes:
                     log = install(deb_version)
                     if not param_silent:
                         end_dialog(deb_version, log)
@@ -321,4 +337,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
