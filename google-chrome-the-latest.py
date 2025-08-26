@@ -218,11 +218,8 @@ def get_installed_version():
 
 # Download deb package from Google
 def download_deb_package(ver):
-    #os.chdir("SlackBuild")
-    #os.system('/usr/bin/wget %s/%s' % (DOWNLOAD_LINK, DEB_FILE))
-    #os.chdir("..")
     os.chdir("SlackBuild")
-    os.system('/usr/bin/wget %s/%s' % (DOWNLOAD_LINK , DEB_FILE))
+    os.system('/usr/bin/wget %s/%s' % (DOWNLOAD_LINK, DEB_FILE))
     result1 = subprocess.run('ar x %s 2>&1' % DEB_FILE, capture_output=True, shell=True)
     result2 = subprocess.run('tar tvf data.tar.xz 2>&1', capture_output=True, shell=True)
     subprocess.run('rm -rf data.tar.xz control.tar.xz debian-binary', capture_output=False, shell=True)
