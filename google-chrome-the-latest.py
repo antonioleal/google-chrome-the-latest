@@ -255,6 +255,7 @@ def cleanup():
     os.chdir("SlackBuild")
     os.system('rm -rf *.deb*')
     os.system(f'rm -rf /{t}/google-chrome-stable-*.t?z')
+    os.system(f'rm -rf /{t}/package-google-chrome-stable')
     os.chdir("..")
     pass
 
