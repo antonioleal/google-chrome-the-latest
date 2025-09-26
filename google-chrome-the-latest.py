@@ -226,7 +226,7 @@ def download_deb_package(ver):
     os.chdir("..")
     if (result1.returncode != 0) or (result2.returncode != 0):
         ok_dialog(MESSAGE_6 % DEB_FILE)
-        delete_deb_package()
+        cleanup()
         exit(0)
 
 # Get the version number from the deb file
@@ -249,11 +249,16 @@ def install(deb_version):
     os.chdir("..")
     return log
 
-# remove rpm file
-def delete_deb_package():
+# clean-up downloaded and generated files
+def cleanup():
+    t="tmp"
     os.chdir("SlackBuild")
-    os.system('rm -rf %s*' % DEB_FILE)
+    os.system('rm -rf *.deb*')
+    os.system(f'rm -rf /{t}/brave-browser-*.tgz')
+    os.system(f'rm -rf /{t}/SBo/brave-browser-*')
+    os.system(f'rm -rf /{t}/SBo/package-brave-browser')
     os.chdir("..")
+    pass
 
 #**********************************************************************************
 #*                                                                                *
@@ -314,7 +319,7 @@ def main():
                     end_dialog(deb_version, log)
             else:
                 ok_dialog(MESSAGE_5 % installed_version)
-            delete_deb_package()
+            cleanup()
         else:
             ok_dialog(MESSAGE_5 % installed_version)
     else:
@@ -330,7 +335,7 @@ def main():
                     log = install(deb_version)
                     if not param_silent:
                         end_dialog(deb_version, log)
-            delete_deb_package()
+            cleanup()
 
 if __name__ == '__main__':
     main()
